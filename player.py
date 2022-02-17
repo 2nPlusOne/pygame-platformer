@@ -22,6 +22,11 @@ class Player(pygame.sprite.Sprite):
         self.was_grounded = False
         self.is_jumping = False
         self.jump_pressed = False
+        self.gravity = GRAVITY
+        self.jump_velocity = (2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX
+        self.jump_gravity = (-2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
+        self.jump_gravity_scale = self.jump_gravity * GRAVITY
+        self.fall_gravity_scale = self.jump_gravity_scale * FALL_GRAVITY_MULTIPLIER
 
         # Time
         self.air_timer = 0
@@ -52,13 +57,14 @@ class Player(pygame.sprite.Sprite):
         """Conditionally applies jumping force to the player."""
         can_jump = self.jumps_remaining > 0 and (self.is_grounded or self.is_jumping or self.air_timer < COYOTE_TIME)
         if not can_jump: return
+        self.gravity = self.jump_gravity_scale
         self.is_jumping = True
-        self.velocity.y = -JUMP_FORCE
+        self.velocity.y = -self.jump_velocity
         self.jumps_remaining -= 1
 
     def move_player(self):
         """Move the player and apply collisions."""
-        self.velocity.y += GRAVITY
+        self.velocity.y += self.gravity
         target_velocity = pygame.math.Vector2(self.direction_x * self.speed, self.velocity.y)
         self.velocity = utils.vector2_smooth_damp(self.velocity, target_velocity, SMOOTH_TIME, self.delta_time)
         self.velocity.x = 0 if abs(self.velocity.x) < 2*SMOOTH_TIME else self.velocity.x
@@ -86,6 +92,10 @@ class Player(pygame.sprite.Sprite):
             elif abs(self.rect.top - sprite.rect.bottom) < COLLISION_TOLERANCE and self.velocity.y < 0:
                 self.rect.top = sprite.rect.bottom
             self.velocity.y = 0
+
+        if (not self.is_grounded and (not self.jump_pressed or self.velocity.y < 0)):
+            self.gravity = self.fall_gravity_scale
+        
 
     def set_grounded(self):
         """Moves the player down 1 pixel and checks for a collision."""
