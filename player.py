@@ -23,9 +23,10 @@ class Player(pygame.sprite.Sprite):
         self.is_jumping = False
         self.jump_pressed = False
         self.gravity = GRAVITY
-        self.jump_velocity = 16 #(2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX
-        self.jump_gravity =  0.8 #(2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
-        self.jump_gravity_scale = GRAVITY # * self.jump_gravity
+        # h = ()
+        self.jump_velocity = (-2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX
+        self.jump_gravity =  (2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
+        self.jump_gravity_scale = GRAVITY * self.jump_gravity
         self.fall_gravity_scale = self.jump_gravity_scale * FALL_GRAVITY_MULTIPLIER
 
         # Time
@@ -37,13 +38,16 @@ class Player(pygame.sprite.Sprite):
         """Process input events. This method is called by Level, which passes in the events from the main game loop."""
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
+                if event.key == pygame.K_LEFT: # Move left
                     self.direction_x = -1
-                if event.key == pygame.K_RIGHT:
+                if event.key == pygame.K_RIGHT: # Move right
                     self.direction_x = 1
-                if event.key == pygame.K_UP:
+                if event.key == pygame.K_UP: # Jump
                     self.jump_pressed = True
                     self.try_jump()
+                if event.key == pygame.K_g: # Invert gravity
+                    self.fall_gravity_scale = -self.fall_gravity_scale
+                    self.gravity = -self.gravity
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT and self.direction_x < 0:
@@ -59,7 +63,7 @@ class Player(pygame.sprite.Sprite):
         if not can_jump: return
         self.gravity = self.jump_gravity_scale
         self.is_jumping = True
-        self.velocity.y = -self.jump_velocity
+        self.velocity.y = self.jump_velocity
         self.jumps_remaining -= 1
 
     def move_player(self):
@@ -80,19 +84,28 @@ class Player(pygame.sprite.Sprite):
             elif abs(self.rect.left - sprite.rect.right) < COLLISION_TOLERANCE and self.velocity.x < 0:
                 self.rect.left = sprite.rect.right
             self.velocity.x = 0
+            break
 
         # Vertical movement and collisions
-        self.rect.y += self.velocity.y
-        for sprite in self.collision_sprites.sprites():
-            if not sprite.rect.colliderect(self.rect): continue
-            # Bottom collision
-            elif abs(self.rect.bottom - sprite.rect.top) < COLLISION_TOLERANCE and self.velocity.y > 0:
-                self.rect.bottom = sprite.rect.top
-            # Top collision
-            elif abs(self.rect.top - sprite.rect.bottom) < COLLISION_TOLERANCE and self.velocity.y < 0:
-                self.rect.top = sprite.rect.bottom
-            self.velocity.y = 0
-
+        # Since vertical movement can be potentially a lot faster than horizontal due to gravity,
+        # we need to check for collisions as we go each frame, instead of after moving by the velocity.
+        for i in range(abs(int(self.velocity.y))):
+            collided = False
+            self.rect.y += abs(self.velocity.y) / self.velocity.y
+            for sprite in self.collision_sprites.sprites():
+                if not sprite.rect.colliderect(self.rect): continue
+                # Bottom collision
+                elif abs(self.rect.bottom - sprite.rect.top) < COLLISION_TOLERANCE and self.velocity.y > 0:
+                    self.rect.bottom = sprite.rect.top
+                # Top collision
+                elif abs(self.rect.top - sprite.rect.bottom) < COLLISION_TOLERANCE and self.velocity.y < 0:
+                    self.rect.top = sprite.rect.bottom
+                self.velocity.y = 0
+                collided = True
+                break
+            if collided: break
+        
+        # Set gravity to fall gravity scale if we're falling or not holding jump
         if (not self.is_grounded and (not self.jump_pressed or self.velocity.y > 0)):
             self.gravity = self.fall_gravity_scale
         

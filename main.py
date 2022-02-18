@@ -4,6 +4,7 @@ from level import Level
 
 # TODO:
 # - Add better jumping using time to apex and jump height
+# - Add variable jump height - [CHECK]
 
 # Pygame Initialization
 pygame.init()
