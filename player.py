@@ -23,9 +23,9 @@ class Player(pygame.sprite.Sprite):
         self.is_jumping = False
         self.jump_pressed = False
         self.gravity = GRAVITY
-        self.jump_velocity = (2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX
-        self.jump_gravity = (-2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
-        self.jump_gravity_scale = self.jump_gravity * GRAVITY
+        self.jump_velocity = 16 #(2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX
+        self.jump_gravity =  0.8 #(2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
+        self.jump_gravity_scale = GRAVITY # * self.jump_gravity
         self.fall_gravity_scale = self.jump_gravity_scale * FALL_GRAVITY_MULTIPLIER
 
         # Time
@@ -93,7 +93,7 @@ class Player(pygame.sprite.Sprite):
                 self.rect.top = sprite.rect.bottom
             self.velocity.y = 0
 
-        if (not self.is_grounded and (not self.jump_pressed or self.velocity.y < 0)):
+        if (not self.is_grounded and (not self.jump_pressed or self.velocity.y > 0)):
             self.gravity = self.fall_gravity_scale
         
 
@@ -131,5 +131,11 @@ class Player(pygame.sprite.Sprite):
         self.handle_air_timer()
 
         #print(f"grounded: {self.is_grounded}")
-        print(f"air_timer: {self.air_timer}")
+        #print(f"air_timer: {self.air_timer}")
         #print(f"velocity: {self.velocity}")
+        
+        print(f"jump_velocity: {self.jump_velocity}")
+        print(f"jump_gravity: {self.jump_gravity}")
+        print(f"jump_gravity_scale: {self.jump_gravity_scale}")
+        print(f"fall_gravity_scale: {self.fall_gravity_scale}")
+        print(f"gravity: {self.gravity}")
