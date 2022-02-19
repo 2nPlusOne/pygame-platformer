@@ -33,13 +33,13 @@ SCREEN_HEIGHT = 720
 FPS = 60
 
 # Player settings
-MAX_PLAYER_SPEED = 10
+MAX_PLAYER_SPEED = 8
 SMOOTH_TIME = 0.1
 COLLISION_TOLERANCE = TILE_SIZE / 2
 GRAVITY = .8
 
 # Jumping
-COYOTE_TIME = 0.2
+COYOTE_TIME = 5 * (1 / FPS) # Frames of coyote time * time duration of 1 frame
 MAX_JUMPS = 2
 MAX_JUMP_HEIGHT = 2 * TILE_SIZE
 TIME_TO_JUMP_APEX = 0.35 * FPS

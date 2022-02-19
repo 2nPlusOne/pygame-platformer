@@ -7,7 +7,7 @@ from level import Level
 
 # Pygame Initialization
 pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), vsync=True)
 clock = pygame.time.Clock()
 pygame.display.set_caption(TITLE)
 

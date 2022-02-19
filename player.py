@@ -1,6 +1,7 @@
 import pygame
 from settings import *
 import utils
+from math import sqrt
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, groups, collision_sprites):
@@ -28,7 +29,7 @@ class Player(pygame.sprite.Sprite):
         self.jump_velocity = ((-2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX) - self.fall_gravity
 
         # Time
-        self.air_timer = 0
+        self.coyote_timer = 0
         self.est_delta_time = 1 / FPS
         self.last_frame_ticks = 0 # Not used if using estimated delta_time (1/FPS)
     
@@ -58,7 +59,8 @@ class Player(pygame.sprite.Sprite):
     def try_jump(self):
         """Conditionally applies jumping force to the player."""
         jump_not_allowed = not (self.jumps_remaining > 0 and 
-                                (self.is_grounded or self.is_jumping or self.air_timer < COYOTE_TIME))
+                                (self.is_grounded or self.is_jumping or 
+                                 self.coyote_timer < COYOTE_TIME))
         if jump_not_allowed: return
         self.is_jumping = True
         self.jumps_remaining -= 1
@@ -131,7 +133,7 @@ class Player(pygame.sprite.Sprite):
 
     def handle_air_timer(self):
         """Resets air timer if grounded, otherwise adds the delta time."""
-        self.air_timer = 0 if self.is_grounded else round(self.air_timer + self.est_delta_time, 2)
+        self.coyote_timer = 0 if self.is_grounded else round(self.coyote_timer + self.est_delta_time, 2)
 
 
     def update(self):
@@ -139,6 +141,8 @@ class Player(pygame.sprite.Sprite):
         self.handle_air_timer()
         self.move()
         self.set_grounded()
+        
+        print(f"jump_velocity: {self.jump_velocity}")
         
     # Zombie method, only used if I decide I need perfect delta time (should probably remove this...)
     def update_real_delta_time(self):
