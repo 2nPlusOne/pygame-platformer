@@ -1,12 +1,12 @@
 import pygame
-import math
+from math import inf, sqrt
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
-def vector2_smooth_damp(current: pygame.math.Vector2, 
+def pygame_vector2_smooth_damp(current: pygame.math.Vector2, 
                         target: pygame.math.Vector2, 
                         smooth_time: float, delta_time: float,
-                        current_velocity = pygame.math.Vector2(0, 0)) -> pygame.math.Vector2:
+                        current_velocity=pygame.math.Vector2(0, 0)) -> pygame.math.Vector2:
     """
     Gradually changes a vector towards a desired goal over time.
     :param current: Current position.
@@ -16,7 +16,7 @@ def vector2_smooth_damp(current: pygame.math.Vector2,
     :param current_velocity: Current velocity, this value is modified by the function every time you call it.
     :return: New position.
     """
-    max_speed = math.inf
+    max_speed = inf
 
     smoothTime = max(0.0001, smooth_time)
     omega = 2 / smoothTime
@@ -33,7 +33,7 @@ def vector2_smooth_damp(current: pygame.math.Vector2,
     max_change_sq = max_change * max_change
     sq_dist = change_x * change_x + change_y * change_y
     if sq_dist > max_change_sq:
-        mag = float(math.sqrt(sq_dist))
+        mag = float(sqrt(sq_dist))
         change_x = change_x / mag * max_change
         change_y = change_y / mag * max_change
     

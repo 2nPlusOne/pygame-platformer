@@ -33,15 +33,17 @@ SCREEN_HEIGHT = 720
 FPS = 60
 
 # Player settings
-MAX_PLAYER_SPEED = 8
+MAX_PLAYER_SPEED = 10
 SMOOTH_TIME = 0.1
 COLLISION_TOLERANCE = TILE_SIZE / 2
-GRAVITY = 0.8
+GRAVITY = .8
 
 # Jumping
 COYOTE_TIME = 0.2
-JUMP_FORCE = 16
 MAX_JUMPS = 2
+MAX_JUMP_HEIGHT = 2 * TILE_SIZE
+TIME_TO_JUMP_APEX = 0.35 * FPS
+FALL_GRAVITY_MULTIPLIER = 1.8
 
 # Colors
 BG_COLOR = '#1e1e1e'
@@ -50,8 +52,8 @@ TILE_COLOR = '#858585'
 
 # Camera
 CAMERA_BORDERS = {
-    'left': 100,
-    'right': 200,
+    'left': SCREEN_WIDTH / 3,
+    'right': SCREEN_WIDTH / 3,
     'top': 100,
     'bottom': 150,
 }
