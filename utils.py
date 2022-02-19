@@ -1,5 +1,5 @@
 import pygame
-from math import inf
+from math import inf, sqrt
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
@@ -33,7 +33,7 @@ def pygame_vector2_smooth_damp(current: pygame.math.Vector2,
     max_change_sq = max_change * max_change
     sq_dist = change_x * change_x + change_y * change_y
     if sq_dist > max_change_sq:
-        mag = float(math.sqrt(sq_dist))
+        mag = float(sqrt(sq_dist))
         change_x = change_x / mag * max_change
         change_y = change_y / mag * max_change
     
