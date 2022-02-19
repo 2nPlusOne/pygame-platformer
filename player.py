@@ -2,7 +2,6 @@ import pygame
 from settings import *
 import utils
 
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, groups, collision_sprites):
         super().__init__(groups)
@@ -22,17 +21,16 @@ class Player(pygame.sprite.Sprite):
         self.was_grounded = False
         self.is_jumping = False
         self.jump_pressed = False
-        self.gravity = GRAVITY
-        # h = ()
-        self.jump_velocity = (-2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX
-        self.jump_gravity =  (2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
-        self.jump_gravity_scale = GRAVITY * self.jump_gravity
-        self.fall_gravity_scale = self.jump_gravity_scale * FALL_GRAVITY_MULTIPLIER
+        self.current_gravity = GRAVITY
+        
+        self.jump_gravity = (2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
+        self.fall_gravity = self.jump_gravity * FALL_GRAVITY_MULTIPLIER
+        self.jump_velocity = ((-2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX) - self.fall_gravity
 
         # Time
         self.air_timer = 0
+        self.est_delta_time = 1 / FPS
         self.last_frame_ticks = 0 # Not used if using estimated delta_time (1/FPS)
-        self.delta_time = 1 / FPS
     
     def process_input(self, events):
         """Process input events. This method is called by Level, which passes in the events from the main game loop."""
@@ -45,9 +43,9 @@ class Player(pygame.sprite.Sprite):
                 if event.key == pygame.K_UP: # Jump
                     self.jump_pressed = True
                     self.try_jump()
-                if event.key == pygame.K_g: # Invert gravity
-                    self.fall_gravity_scale = -self.fall_gravity_scale
-                    self.gravity = -self.gravity
+                if event.key == pygame.K_g: # Invert gravity just for fun
+                    self.fall_gravity = -self.fall_gravity
+                    self.current_gravity = -self.current_gravity
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT and self.direction_x < 0:
@@ -59,18 +57,21 @@ class Player(pygame.sprite.Sprite):
 
     def try_jump(self):
         """Conditionally applies jumping force to the player."""
-        can_jump = self.jumps_remaining > 0 and (self.is_grounded or self.is_jumping or self.air_timer < COYOTE_TIME)
-        if not can_jump: return
-        self.gravity = self.jump_gravity_scale
+        jump_not_allowed = not (self.jumps_remaining > 0 and 
+                                (self.is_grounded or self.is_jumping or self.air_timer < COYOTE_TIME))
+        if jump_not_allowed: return
         self.is_jumping = True
-        self.velocity.y = self.jump_velocity
         self.jumps_remaining -= 1
+        self.current_gravity = self.jump_gravity
+        self.velocity.y = self.jump_velocity
+        
 
-    def move_player(self):
+    def move(self):
         """Move the player and apply collisions."""
-        self.velocity.y += self.gravity
+        self.velocity.y += self.current_gravity
+        
         target_velocity = pygame.math.Vector2(self.direction_x * self.speed, self.velocity.y)
-        self.velocity = utils.vector2_smooth_damp(self.velocity, target_velocity, SMOOTH_TIME, self.delta_time)
+        self.velocity = utils.pygame_vector2_smooth_damp(self.velocity, target_velocity, SMOOTH_TIME, self.est_delta_time)
         self.velocity.x = 0 if abs(self.velocity.x) < 2*SMOOTH_TIME else self.velocity.x
 
         # Horizontal movement and collisions
@@ -85,7 +86,7 @@ class Player(pygame.sprite.Sprite):
                 self.rect.left = sprite.rect.right
             self.velocity.x = 0
             break
-
+        
         # Vertical movement and collisions
         # Since vertical movement can be potentially a lot faster than horizontal due to gravity,
         # we need to check for collisions as we go each frame, instead of after moving by the velocity.
@@ -107,8 +108,7 @@ class Player(pygame.sprite.Sprite):
         
         # Set gravity to fall gravity scale if we're falling or not holding jump
         if (not self.is_grounded and (not self.jump_pressed or self.velocity.y > 0)):
-            self.gravity = self.fall_gravity_scale
-        
+            self.current_gravity = self.fall_gravity
 
     def set_grounded(self):
         """Moves the player down 1 pixel and checks for a collision."""
@@ -123,32 +123,25 @@ class Player(pygame.sprite.Sprite):
                 break
             else:
                 self.is_grounded = False
-                if self.was_grounded and not self.is_grounded:
-                    self.air_time_start = pygame.time.get_ticks()
-                    self.was_grounded = False       
+                left_ground_this_frame = self.was_grounded and not self.is_grounded
+                if not left_ground_this_frame: continue
+                self.air_time_start = pygame.time.get_ticks()
+                self.was_grounded = False
         self.rect.y -= 1
 
     def handle_air_timer(self):
         """Resets air timer if grounded, otherwise adds the delta time."""
-        self.air_timer = 0 if self.is_grounded else round(self.air_timer + self.delta_time, 2)
+        self.air_timer = 0 if self.is_grounded else round(self.air_timer + self.est_delta_time, 2)
 
-    def update_real_delta_time(self):
-        """Update the delta time."""
-        self.delta_time = (pygame.time.get_ticks() - self.last_frame_ticks) / 1000
-        self.last_frame_ticks = pygame.time.get_ticks()
 
     def update(self):
         """Update the player."""
-        self.move_player()
-        self.set_grounded()
         self.handle_air_timer()
-
-        #print(f"grounded: {self.is_grounded}")
-        #print(f"air_timer: {self.air_timer}")
-        #print(f"velocity: {self.velocity}")
+        self.move()
+        self.set_grounded()
         
-        print(f"jump_velocity: {self.jump_velocity}")
-        print(f"jump_gravity: {self.jump_gravity}")
-        print(f"jump_gravity_scale: {self.jump_gravity_scale}")
-        print(f"fall_gravity_scale: {self.fall_gravity_scale}")
-        print(f"gravity: {self.gravity}")
+    # Zombie method, only used if I decide I need perfect delta time (should probably remove this...)
+    def update_real_delta_time(self):
+        """Update the delta time."""
+        self.est_delta_time = (pygame.time.get_ticks() - self.last_frame_ticks) / 1000
+        self.last_frame_ticks = pygame.time.get_ticks()
