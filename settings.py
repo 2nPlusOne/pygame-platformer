@@ -40,7 +40,7 @@ COLLISION_TOLERANCE = TILE_SIZE / 4 # Tolerance for collisions in pixels
 
 # Jumping
 COYOTE_TIME = 5 * (1 / FPS)            # Frames of coyote time * time duration of 1 frame
-JUMP_BUFFER_TIME = 15 * (1 / FPS) # Frames of jump input buffer * time duration of 1 frame
+JUMP_BUFFER_TIME = 5 * (1 / FPS) # Frames of jump input buffer * time duration of 1 frame
 MAX_JUMPS = 2                          # Number of jumps the player has until grounded
 MAX_JUMP_HEIGHT = 2 * TILE_SIZE        # Pixel height of the player's jump
 TIME_TO_JUMP_APEX = 0.35 * FPS         # Number of frames it takes to reach the apex of the jump
