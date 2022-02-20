@@ -22,15 +22,16 @@ class Player(pygame.sprite.Sprite):
         self.was_grounded = False
         self.is_jumping = False
         self.jump_pressed = False
-        self.current_gravity = GRAVITY
+        self.jumping_locked = False
+        self.current_gravity = 0
         
         self.jump_gravity = (2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
         self.fall_gravity = self.jump_gravity * FALL_GRAVITY_MULTIPLIER
         self.jump_velocity = ((-2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX) - self.fall_gravity
 
         # Time
-        self.coyote_timer = 0
-        self.est_delta_time = 1 / FPS
+        self.coyote_timer = COYOTE_TIME
+        self.jump_buffer_timer = JUMP_BUFFER_TIME
         self.last_frame_ticks = 0 # Not used if using estimated delta_time (1/FPS)
     
     def process_input(self, events):
@@ -43,7 +44,6 @@ class Player(pygame.sprite.Sprite):
                     self.direction_x = 1
                 if event.key == pygame.K_UP: # Jump
                     self.jump_pressed = True
-                    self.try_jump()
                 if event.key == pygame.K_g: # Invert gravity just for fun
                     self.fall_gravity = -self.fall_gravity
                     self.current_gravity = -self.current_gravity
@@ -55,25 +55,46 @@ class Player(pygame.sprite.Sprite):
                     self.direction_x = 0
                 if event.key == pygame.K_UP:
                     self.jump_pressed = False
+                    self.jumping_locked = False
 
-    def try_jump(self):
+    def check_jump_buffer(self):
         """Conditionally applies jumping force to the player."""
-        jump_not_allowed = not (self.jumps_remaining > 0 and 
-                                (self.is_grounded or self.is_jumping or 
-                                 self.coyote_timer < COYOTE_TIME))
-        if jump_not_allowed: return
+        self.update_jump_buffer_timer()
+        
+        # jump_allowed = not (self.jumps_remaining > 0 and 
+        #                 (self.is_grounded or self.is_jumping or 
+        #                     self.coyote_timer < COYOTE_TIME))
+        jump_input = self.jump_buffer_timer < JUMP_BUFFER_TIME
+        can_jump = not self.jumping_locked and self.jumps_remaining > 0 and (
+                   self.is_jumping or self.coyote_timer < COYOTE_TIME)
+        self.jumping_locked = self.jump_pressed
+        
+        if jump_input and can_jump:
+            self.jump()
+
+    def jump(self):
+        self.coyote_timer = COYOTE_TIME
+        self.jump_buffer_timer = JUMP_BUFFER_TIME
         self.is_jumping = True
         self.jumps_remaining -= 1
         self.current_gravity = self.jump_gravity
         self.velocity.y = self.jump_velocity
         
+    def update_air_timer(self):
+        """Resets air timer if grounded, otherwise increments by delta time."""
+        self.coyote_timer = 0 if self.is_grounded else round(self.coyote_timer + EST_DELTA_TIME, 2)
+        
+    def update_jump_buffer_timer(self):
+        """Resets jump buffer timer if jump key pressed, otherwise increments by delta time."""
+        self.jump_buffer_timer = 0 if self.jump_pressed and not self.jumping_locked else round(self.jump_buffer_timer + EST_DELTA_TIME, 2)
 
     def move(self):
         """Move the player and apply collisions."""
         self.velocity.y += self.current_gravity
+        self.check_jump_buffer()
         
         target_velocity = pygame.math.Vector2(self.direction_x * self.speed, self.velocity.y)
-        self.velocity = utils.pygame_vector2_smooth_damp(self.velocity, target_velocity, SMOOTH_TIME, self.est_delta_time)
+        self.velocity = utils.pygame_vector2_smooth_damp(self.velocity, target_velocity, SMOOTH_TIME, EST_DELTA_TIME)
         self.velocity.x = 0 if abs(self.velocity.x) < 2*SMOOTH_TIME else self.velocity.x
 
         # Horizontal movement and collisions
@@ -131,21 +152,17 @@ class Player(pygame.sprite.Sprite):
                 self.was_grounded = False
         self.rect.y -= 1
 
-    def handle_air_timer(self):
-        """Resets air timer if grounded, otherwise adds the delta time."""
-        self.coyote_timer = 0 if self.is_grounded else round(self.coyote_timer + self.est_delta_time, 2)
-
-
     def update(self):
         """Update the player."""
-        self.handle_air_timer()
+        self.update_air_timer()
         self.move()
         self.set_grounded()
         
-        print(f"jump_velocity: {self.jump_velocity}")
+        print(f"jumps_remaining: {self.jumps_remaining}")
+        print(f"jump_locked: {self.jumping_locked}")
         
     # Zombie method, only used if I decide I need perfect delta time (should probably remove this...)
-    def update_real_delta_time(self):
+    def update_delta_time(self):
         """Update the delta time."""
-        self.est_delta_time = (pygame.time.get_ticks() - self.last_frame_ticks) / 1000
+        self.delta_time = (pygame.time.get_ticks() - self.last_frame_ticks) / 1000
         self.last_frame_ticks = pygame.time.get_ticks()
