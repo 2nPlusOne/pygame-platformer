@@ -61,8 +61,12 @@ class Player(pygame.sprite.Sprite):
         """Conditionally applies jumping force to the player."""
         self.update_jump_buffer_timer()
         
+        # jump_allowed = not (self.jumps_remaining > 0 and 
+        #                 (self.is_grounded or self.is_jumping or 
+        #                     self.coyote_timer < COYOTE_TIME))
         jump_input = self.jump_buffer_timer < JUMP_BUFFER_TIME
-        can_jump = not self.jumping_locked and (self.jumps_remaining > 0 or self.coyote_timer < COYOTE_TIME)
+        can_jump = not self.jumping_locked and self.jumps_remaining > 0 and (
+                   self.is_jumping or self.coyote_timer < COYOTE_TIME)
         self.jumping_locked = self.jump_pressed
         
         if jump_input and can_jump:
