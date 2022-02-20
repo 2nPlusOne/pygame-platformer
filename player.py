@@ -68,7 +68,9 @@ class Player(pygame.sprite.Sprite):
         # jump_allowed = (self.jump_buffer_timer < JUMP_BUFFER_TIME and self.coyote_timer < COYOTE_TIME) or (
         #     self.jump_buffer_timer < JUMP_BUFFER_TIME and self.jumps_remaining > 0)
         jump_input = self.jump_buffer_timer < JUMP_BUFFER_TIME
-        can_jump = self.coyote_timer < COYOTE_TIME
+        can_jump = not self.jumping_locked and (self.jumps_remaining > 0 or self.coyote_timer < COYOTE_TIME)
+        print(f"can_jump: {can_jump}")
+        self.jumping_locked = self.jump_pressed
         
         if jump_input and can_jump:
             self.jump()
@@ -76,7 +78,6 @@ class Player(pygame.sprite.Sprite):
     def jump(self):
         self.coyote_timer = COYOTE_TIME
         self.is_jumping = True
-        self.jumping_locked = True
         self.jumps_remaining -= 1
         self.current_gravity = self.jump_gravity
         self.velocity.y = self.jump_velocity
@@ -87,7 +88,7 @@ class Player(pygame.sprite.Sprite):
         
     def update_jump_buffer_timer(self):
         """Resets jump buffer timer if jump key pressed, otherwise increments by delta time."""
-        self.jump_buffer_timer = 0 if self.jump_pressed else round(self.jump_buffer_timer + EST_DELTA_TIME, 2)
+        self.jump_buffer_timer = 0 if self.jump_pressed and not self.jumping_locked else round(self.jump_buffer_timer + EST_DELTA_TIME, 2)
 
     def move(self):
         """Move the player and apply collisions."""
@@ -159,8 +160,7 @@ class Player(pygame.sprite.Sprite):
         self.move()
         self.set_grounded()
         
-        print(f"jumps remaining: {self.jumps_remaining}")
-        print(f"jump buffer timer: {self.jump_buffer_timer}")
+        print(f"jumps_remaining: {self.jumps_remaining}")
         print(f"jump_locked: {self.jumping_locked}")
         
     # Zombie method, only used if I decide I need perfect delta time (should probably remove this...)
