@@ -1,7 +1,6 @@
 import pygame
 from settings import *
 import utils
-from math import sqrt
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, groups, collision_sprites):
