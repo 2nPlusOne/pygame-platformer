@@ -18,20 +18,20 @@ class Player(pygame.sprite.Sprite):
 
         # Jumping
         self.jumps_remaining = MAX_JUMPS
-        self.is_grounded = False
-        self.was_grounded = False
-        self.is_jumping = False
-        self.jump_pressed = False
-        self.jumping_locked = False
-        self.current_gravity = 0
+        self.is_grounded = False    # Is the player on the ground?
+        self.was_grounded = False   # Used to determine if the player has left the ground this frame
+        self.is_jumping = False     # Is the player jumping?
+        self.jump_pressed = False   # Is the jump key currently pressed?
+        self.jumping_locked = False # Used to lock the player from jumping again until they release the jump key
+        self.current_gravity = 0    # The current gravity affecting the player
         
         self.jump_gravity = (2 * MAX_JUMP_HEIGHT) / (TIME_TO_JUMP_APEX ** 2)
         self.fall_gravity = self.jump_gravity * FALL_GRAVITY_MULTIPLIER
         self.jump_velocity = ((-2 * MAX_JUMP_HEIGHT) / TIME_TO_JUMP_APEX) - self.fall_gravity
 
         # Time
-        self.coyote_timer = COYOTE_TIME
-        self.jump_buffer_timer = JUMP_BUFFER_TIME
+        self.coyote_timer = COYOTE_TIME           # Time the player has to jump after leaving the ground
+        self.jump_buffer_timer = JUMP_BUFFER_TIME # Registers jump input as long as this is less than JUMP_BUFFER_TIME
         self.last_frame_ticks = 0 # Not used if using estimated delta_time (1/FPS)
     
     def process_input(self, events):
@@ -91,7 +91,7 @@ class Player(pygame.sprite.Sprite):
     def move(self):
         """Move the player and apply collisions."""
         self.velocity.y += self.current_gravity
-        self.check_jump_buffer()
+        self.check_jump_buffer() # Check if the player should jump this frame
         
         target_velocity = pygame.math.Vector2(self.direction_x * self.speed, self.velocity.y)
         self.velocity = utils.pygame_vector2_smooth_damp(self.velocity, target_velocity, SMOOTH_TIME, EST_DELTA_TIME)
