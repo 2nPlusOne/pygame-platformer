@@ -34,6 +34,7 @@ class Level:
 
         self.active_sprites.update()
         self.visible_sprites.custom_draw(self.player)
+        self.visible_sprites.draw(self.display_surf)
 
 class CameraGroup(pygame.sprite.Group):
     """A sprite group that follows the camera."""

@@ -3,7 +3,14 @@ from settings import *
 from level import Level
 
 # TODO:
-# - 
+# - import animations CHECK
+# - animate the player's state CHECK
+# - fix player clipping into the wall when exiting jump state
+# - create an animator class
+# - create an enum for the animator states
+# - create an animator state machine?
+# - create a state machine for the player state?
+# - create an enum for the player states?
 
 # Pygame Initialization
 pygame.init()

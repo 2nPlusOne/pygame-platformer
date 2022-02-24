@@ -1,15 +1,26 @@
 import pygame
 from settings import *
 import utils
-from math import sqrt
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, groups, collision_sprites):
         super().__init__(groups)
-        self.image = pygame.Surface((TILE_SIZE / 2, TILE_SIZE))
-        self.image.fill(PLAYER_COLOR)
+        
+        # animation
+        self.import_character_assets()
+        self.frame_index = 0
+        self.animation_speed = 0.15
+        self.image = self.animations['idle'][self.frame_index]
         self.rect = self.image.get_rect(topleft=pos)
         self.collision_sprites = collision_sprites
+        
+        # Player status
+        self.state = 'idle'             # Current state of the player
+        self.facing_right = True        # Facing right or left
+        self.is_grounded = False        # Is the player on the ground?
+        self.touching_ceiling = False   # Is the player touching the ceiling?
+        self.touching_left = False      # Is the player touching a wall on the left?
+        self.touching_right = False     # Is the player touching a wall on the right?
 
         # Player movement
         self.direction_x = 0 # -1 = left, 1 = right, 0 = none
@@ -18,7 +29,6 @@ class Player(pygame.sprite.Sprite):
 
         # Jumping
         self.jumps_remaining = MAX_JUMPS
-        self.is_grounded = False    # Is the player on the ground?
         self.was_grounded = False   # Used to determine if the player has left the ground this frame
         self.is_jumping = False     # Is the player jumping?
         self.jump_pressed = False   # Is the jump key currently pressed?
@@ -32,7 +42,48 @@ class Player(pygame.sprite.Sprite):
         # Time
         self.coyote_timer = COYOTE_TIME           # Time the player has to jump after leaving the ground
         self.jump_buffer_timer = JUMP_BUFFER_TIME # Registers jump input as long as this is less than JUMP_BUFFER_TIME
-        self.last_frame_ticks = 0 # Not used if using estimated delta_time (1/FPS)
+        self.last_frame_ticks = 0   # Not used if using estimated delta_time (1/FPS)
+    
+    def import_character_assets(self):
+        character_path = 'assets/character/'
+        self.animations = {'idle':[], 'run':[], 'jump':[], 'fall':[]}
+        
+        for animation in self.animations.keys():
+            full_path = f"{character_path}{animation}/"
+            self.animations[animation] = utils.import_folder(full_path)
+            
+    def animate(self):
+        animation = self.animations[self.state]
+        
+        # loop over frame index
+        self.frame_index += self.animation_speed
+        if self.frame_index >= len(animation):
+            self.frame_index = 0
+        
+        image =  animation[int(self.frame_index)]
+        self.image = image if self.facing_right else pygame.transform.flip(image, True, False)
+        
+        # Set the rect
+        if self.is_grounded:
+            self.rect = self.image.get_rect(midbottom = self.rect.midbottom)
+        elif self.touching_ceiling:
+            self.rect = self.image.get_rect(midtop = self.rect.midtop)
+        else:
+            self.rect = self.image.get_rect(center = self.rect.center)
+        
+    def update_state(self):
+        """Sets the current status of the player."""
+        if self.is_grounded:
+            self.state = 'run' if self.direction_x != 0 else 'idle'
+        elif self.velocity.y < 0:
+                self.state = 'jump'
+        elif self.velocity.y > self.current_gravity:
+                self.state = 'fall'
+        
+        if self.direction_x > 0:
+            self.facing_right = True
+        elif self.direction_x < 0:
+            self.facing_right = False
     
     def process_input(self, events):
         """Process input events. This method is called by Level, which passes in the events from the main game loop."""
@@ -124,10 +175,14 @@ class Player(pygame.sprite.Sprite):
                 # Top collision
                 elif abs(self.rect.top - sprite.rect.bottom) < COLLISION_TOLERANCE and self.velocity.y < 0:
                     self.rect.top = sprite.rect.bottom
+                    self.touching_ceiling = True
                 self.velocity.y = 0
                 collided = True
                 break
             if collided: break
+        
+        if self.touching_ceiling and self.velocity.y > 0:
+            self.touching_ceiling = False
         
         # Set gravity to fall gravity scale if we're falling or not holding jump
         if (not self.is_grounded and (not self.jump_pressed or self.velocity.y > 0)):
@@ -154,12 +209,12 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         """Update the player."""
+        self.update_state()
+        self.animate()
+        
         self.update_air_timer()
         self.move()
         self.set_grounded()
-        
-        print(f"jumps_remaining: {self.jumps_remaining}")
-        print(f"jump_locked: {self.jumping_locked}")
         
     # Zombie method, only used if I decide I need perfect delta time (should probably remove this...)
     def update_delta_time(self):

@@ -1,7 +1,20 @@
 import pygame
 from math import inf, sqrt
+from os import walk
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
+
+def import_folder(folder_path: str) -> list[pygame.Surface]:
+    """Imports all images in a folder converting each image to
+       a pygame surface, and returns a list of those surfaces."""
+    image_surfaces = []
+    for _,_,image_filenames in walk(folder_path):
+        # convert each image to a pygame surface
+        for img in image_filenames:
+            image_path = f"{folder_path}/{img}"
+            surface = pygame.image.load(image_path).convert_alpha()
+            image_surfaces.append(surface)
+    return image_surfaces
 
 def pygame_vector2_smooth_damp(current: pygame.math.Vector2, 
                         target: pygame.math.Vector2, 
@@ -9,6 +22,7 @@ def pygame_vector2_smooth_damp(current: pygame.math.Vector2,
                         current_velocity=pygame.math.Vector2(0, 0)) -> pygame.math.Vector2:
     """
     Gradually changes a vector towards a desired goal over time.
+    Parameters:
     :param current: Current position.
     :param target: Position we're trying to reach.
     :param smooth_time: Approximately the time it will take to reach the target.
